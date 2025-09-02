@@ -19,6 +19,7 @@ import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 
 contract PoolFactory {
     error PoolFactory__PoolAlreadyExists(address tokenAddress);
+    // @audit-w -info this error is not used
     error PoolFactory__PoolDoesNotExist(address tokenAddress);
 
     /*//////////////////////////////////////////////////////////////
@@ -38,6 +39,7 @@ contract PoolFactory {
                                FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     constructor(address wethToken) {
+        //@audit-w -info There is no zero check
         i_wethToken = wethToken;
     }
 
@@ -48,8 +50,14 @@ contract PoolFactory {
         if (s_pools[tokenAddress] != address(0)) {
             revert PoolFactory__PoolAlreadyExists(tokenAddress);
         }
+        // @audit ? No zero address check on tokenAddress?
+        // e "T-Swap Dai"
+        // q wierd ERC20 "what if the name of the function reverts?"
         string memory liquidityTokenName = string.concat("T-Swap ", IERC20(tokenAddress).name());
+        // "ts DAI"
+        // @audit -info: instead of .name() it should be .symbol()
         string memory liquidityTokenSymbol = string.concat("ts", IERC20(tokenAddress).name());
+
         TSwapPool tPool = new TSwapPool(tokenAddress, i_wethToken, liquidityTokenName, liquidityTokenSymbol);
         s_pools[tokenAddress] = address(tPool);
         s_tokens[address(tPool)] = tokenAddress;

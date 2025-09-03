@@ -91,4 +91,44 @@ contract TSwapPoolTest is Test {
         assertEq(pool.totalSupply(), 0);
         assert(weth.balanceOf(liquidityProvider) + poolToken.balanceOf(liquidityProvider) > 400e18);
     }
+
+    function testGetInputAmountBasedOnOutput() public {
+        uint256 initialLiquidity = 100e18;
+        vm.startPrank(liquidityProvider);
+        weth.approve(address(pool), 100e18);
+        poolToken.approve(address(pool), 100e18);
+
+        // Deposit liquidity into the pool via a liquidity provider
+
+        pool.deposit({
+            wethToDeposit: initialLiquidity,
+            minimumLiquidityTokensToMint: 0,
+            maximumPoolTokensToDeposit: initialLiquidity,
+            deadline: uint64(block.timestamp)
+        });
+        vm.stopPrank();
+
+        // We initilize a user with 11 pool tokens
+
+        address someUser = makeAddr("someUser");
+        uint256 userInitialPoolTokenBalance = 11e18;
+        poolToken.mint(someUser, userInitialPoolTokenBalance);
+        vm.startPrank(someUser);
+
+        // Users buy 1 WETH from the pool, paying with pool tokens
+
+        poolToken.approve(address(pool), type(uint256).max);
+        pool.swapExactOutput(poolToken, weth, 1 ether, uint64(block.timestamp));
+
+        // Initial liquidity was 1:1, so user should have paid ~1 pool token
+        // However, it spent much more than that. The user started with 11 tokens, and now only has less than
+
+        assertLt(poolToken.balanceOf(someUser), 1 ether);
+        vm.stopPrank();
+
+        // The liquidity provider can rug all funds from the pool now,
+        // including those deposited by user
+        vm.startPrank(liquidityProvider);
+        pool.withdraw(liquidityTokensToBurn, minWethToWithdraw, minPoolTokensToWithdraw, deadline);
+    }
 }

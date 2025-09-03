@@ -55,7 +55,7 @@ contract PoolFactory {
         // q wierd ERC20 "what if the name of the function reverts?"
         string memory liquidityTokenName = string.concat("T-Swap ", IERC20(tokenAddress).name());
         // "ts DAI"
-        // @audit -info: instead of .name() it should be .symbol()
+        // @audit-w -info: instead of .name() it should be .symbol()
         string memory liquidityTokenSymbol = string.concat("ts", IERC20(tokenAddress).name());
 
         TSwapPool tPool = new TSwapPool(tokenAddress, i_wethToken, liquidityTokenName, liquidityTokenSymbol);

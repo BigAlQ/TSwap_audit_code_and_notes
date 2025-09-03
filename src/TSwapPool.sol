@@ -41,7 +41,7 @@ contract TSwapPool is ERC20 {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    // @audit -info events should be indexed if there are more than 3 params
+    // @audit-w -info events should be indexed if there are more than 3 params
 
     event LiquidityAdded(address indexed liquidityProvider, uint256 wethDeposited, uint256 poolTokensDeposited);
     event LiquidityRemoved(address indexed liquidityProvider, uint256 wethWithdrawn, uint256 poolTokensWithdrawn);
@@ -75,7 +75,7 @@ contract TSwapPool is ERC20 {
     )
         ERC20(liquidityTokenName, liquidityTokenSymbol)
     {
-        // @audit -info: No zero address check
+        // @audit-w -info: No zero address check
         i_wethToken = IERC20(wethToken);
         i_poolToken = IERC20(poolToken);
     }
@@ -97,7 +97,7 @@ contract TSwapPool is ERC20 {
         uint256 wethToDeposit,
         uint256 minimumLiquidityTokensToMint,
         uint256 maximumPoolTokensToDeposit,
-        // @audit -High Unused param. A user who expects the deposit will fail, will be suprised that it went through.
+        // @audit-w -High Unused param. A user who expects the deposit will fail, will be suprised that it went through.
         uint64 deadline
     )
         external
@@ -105,12 +105,12 @@ contract TSwapPool is ERC20 {
         returns (uint256 liquidityTokensToMint)
     {
         if (wethToDeposit < MINIMUM_WETH_LIQUIDITY) {
-            // @audit -info MINIMUM_WETH_LIQUIDITY is a constant and does not add utility when emitted in an event
+            // @audit-w -info MINIMUM_WETH_LIQUIDITY is a constant and does not add utility when emitted in an event
             revert TSwapPool__WethDepositAmountTooLow(MINIMUM_WETH_LIQUIDITY, wethToDeposit);
         }
         if (totalLiquidityTokenSupply() > 0) {
             uint256 wethReserves = i_wethToken.balanceOf(address(this));
-            // @audit -gas: unused local variable wastes gas
+            // @audit-w -gas: unused local variable wastes gas
             uint256 poolTokenReserves = i_poolToken.balanceOf(address(this));
             // Our invariant says weth, poolTokens, and liquidity tokens must always have the same ratio after the
             // initial deposit
@@ -147,7 +147,7 @@ contract TSwapPool is ERC20 {
             // This will be the "initial" funding of the protocol. We are starting from blank here!
             // We just have them send the tokens in, and we mint liquidity tokens based on the weth
             _addLiquidityMintAndTransfer(wethToDeposit, maximumPoolTokensToDeposit, wethToDeposit);
-            //@audit -info it would be better to change vars before external calls.
+            //@audit-w -info it would be better to change vars before internal calls.
             liquidityTokensToMint = wethToDeposit;
         }
     }
@@ -164,7 +164,7 @@ contract TSwapPool is ERC20 {
         private
     {
         _mint(msg.sender, liquidityTokensToMint);
-        //@audit -low poolTokensToDeposit and wethToDeposit should be switche
+        //@audit-w -low poolTokensToDeposit and wethToDeposit should be switche
         emit LiquidityAdded(msg.sender, poolTokensToDeposit, wethToDeposit);
 
         // Interactions
@@ -239,7 +239,7 @@ contract TSwapPool is ERC20 {
         // (totalWethOfPool * totalPoolTokensOfPool) + (wethToDeposit * totalPoolTokensOfPool) = k - (totalWethOfPool *
         // poolTokensToDeposit) - (wethToDeposit * poolTokensToDeposit)
 
-        // @audit -info magic numbers
+        // @audit-w -info magic numbers
         uint256 inputAmountMinusFee = inputAmount * 997;
         uint256 numerator = inputAmountMinusFee * outputReserves;
         uint256 denominator = (inputReserves * 1000) + inputAmountMinusFee;
@@ -264,7 +264,7 @@ contract TSwapPool is ERC20 {
         return ((inputReserves * outputAmount) * 10000) / ((outputReserves - outputAmount) * 997);
     }
 
-    // @audit -info where is natspec?
+    // @audit-w -info where is natspec?
     function swapExactInput(
         IERC20 inputToken, // e input token to swap / sell ie: DAI
         uint256 inputAmount, // e  amount of the input token to swap

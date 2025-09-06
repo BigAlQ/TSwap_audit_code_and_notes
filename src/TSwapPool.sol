@@ -260,7 +260,7 @@ contract TSwapPool is ERC20 {
     {
         //  ∆x =  ( β / (1-β) ) * x
 
-        // @audit -high -> users pay too much fess, 10,000 is supposed to be 1,000
+        // @audit-w -high -> users pay too much fess, 10,000 is supposed to be 1,000
         return ((inputReserves * outputAmount) * 10000) / ((outputReserves - outputAmount) * 997);
     }
 
@@ -272,12 +272,12 @@ contract TSwapPool is ERC20 {
         uint256 minOutputAmount, // e minimum output amount to recieve of weth from dai
         uint64 deadline // e deadline for when the transaction should expire
     )
-        // @audit -info: this should be external
+        // @audit-w -info: this should be external
         public
         revertIfZero(inputAmount)
         revertIfDeadlinePassed(deadline)
         returns (
-            // @audit -Low: The protocol will always return zero
+            // @audit-w -Low: The protocol will always return zero
             // Likelyhood: EVERYTIME/ HIGH
             // Impact: Low?
             uint256 output
@@ -305,7 +305,7 @@ contract TSwapPool is ERC20 {
      * @param inputToken ERC20 token to pull from caller
      * @param outputToken ERC20 token to send to caller
      * @param outputAmount The exact amount of tokens to send to caller
-       @audit -info Missing deadline param in natspec
+       @audit-w -info Missing deadline param in natspec
      */
     // q
     function swapExactOutput(
@@ -324,7 +324,7 @@ contract TSwapPool is ERC20 {
 
         inputAmount = getInputAmountBasedOnOutput(outputAmount, inputReserves, outputReserves);
 
-        // @audit -high no slippage protection!
+        // @audit-w -high no slippage protection!
         // Ex: I want 10 output WETH, and my input is DAI
         // send the txn, but the pool gets a Massive transaction that changes the price
         // So now, if your desired output is 10 WETH, you need to input 1,000,000 DAI
@@ -338,7 +338,7 @@ contract TSwapPool is ERC20 {
      * @return wethAmount amount of WETH received by caller
      */
     function sellPoolTokens(uint256 poolTokenAmount) external returns (uint256 wethAmount) {
-        // @audit -high the swapExactOutput function is used incorrectly
+        // -w -high the swapExactOutput function is used incorrectly
         return swapExactOutput(i_poolToken, i_wethToken, poolTokenAmount, uint64(block.timestamp));
     }
 

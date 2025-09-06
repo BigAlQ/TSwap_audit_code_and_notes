@@ -131,4 +131,72 @@ contract TSwapPoolTest is Test {
         vm.startPrank(liquidityProvider);
         pool.withdraw(liquidityTokensToBurn, minWethToWithdraw, minPoolTokensToWithdraw, deadline);
     }
+    function testSlippage() {
+        uint256 initialLiquidity = 100e18;
+        vm.startPrank(liquidityProvider);
+        weth.approve(address(pool), 100e18);
+        poolToken.approve(address(pool), 100e18);
+
+        // Deposit liquidity into the pool via a liquidity provider
+
+        pool.deposit({
+            wethToDeposit: initialLiquidity,
+            minimumLiquidityTokensToMint: 0,
+            maximumPoolTokensToDeposit: initialLiquidity,
+            deadline: uint64(block.timestamp)
+        });
+        vm.stopPrank();
+
+        // We initilize a user with 11 pool tokens
+
+        address someUser = makeAddr("someUser");
+        uint256 userInitialPoolTokenBalance = 11e18;
+        poolToken.mint(someUser, userInitialPoolTokenBalance);
+
+        // Initilize another user with 100_000 pool tokens 
+        address richUser = makeAddr("richUser");
+        uint256 userInitialPoolTokenBalance = 100000e18;
+        poolToken.mint(richUser, userInitialPoolTokenBalance);
+        vm.startPrank(richUser);
+
+        // We get the price of WETH in poolTokens
+
+        uint256 originalWethPrice = pool.getPriceOfOneWethInPoolTokens(); 
+        console.log("The original weth price is: ");
+        console.log(originalWethPrice);
+
+        // User 1 wants to buy 1 WETH from the pool, paying with pool tokens expecting the original weth price, but then a whale purchases a lot of WETH
+        // The whale decreases the supply of WETH, which increases the price of Weth, and User 1 has to pay the higher price.
+        
+        // Rich user / Whales purcahse of weth
+        poolToken.approve(address(pool), type(uint256).max);
+        pool.swapExactOutput(poolToken, weth, 10 ether, uint64(block.timestamp));
+        vm.stopPrank();
+
+        // Some users purcahse
+        vm.startPrank(richUser);
+
+        poolToken.approve(address(pool), type(uint256).max);
+        pool.swapExactOutput(poolToken, weth, 1 ether, uint64(block.timestamp));
+        vm.stopPrank();
+
+    }
+
+    function testInvariantBroken() public {
+        vm.startPrank(liquidityProvider);
+        weth.approve(address(pool), 100e18);
+        poolToken.approve(address(pool), 100e18);
+        pool.deposit(100e18, 100e18, 100e18, uint64(block.timestamp));
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        poolToken.approve(address(pool), 10e18);
+        // After we swap, there will be ~110 tokenA, and ~91 WETH
+        // 100 * 100 = 10,000
+        // 110 * ~91 = 10,000
+        uint256 expected = 9e18;
+
+        pool.swapExactInput(poolToken, 10e18, weth, expected, uint64(block.timestamp));
+        assert(weth.balanceOf(user) >= expected);
+    }
 }
